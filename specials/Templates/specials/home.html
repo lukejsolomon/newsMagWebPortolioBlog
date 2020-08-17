@@ -1,0 +1,27 @@
+{% extends 'specials/bootStrapTmplt.html' %}
+{% block content %}
+
+
+
+
+
+
+<div class="row">
+
+    {% for outline in outline %}
+    <div class="col-lg-4 col-md-6">
+
+        <img src="{{ outline.image.url }}" height=350 width=500>
+
+        <br>
+        <h1>{{ outline.title }}</h1>
+        <br>
+        <p>{{ outline.description }}</p>
+        <br> {% if outline.url %}
+        <a href="{{ outline.url }}">link</a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,188 @@
+Django notes
+
+Creating a New Project
+django-admin startproject projectname
+
+Add an App to a Project
+python manage.py startapp appname
+
+python manage.py runserver
+
+object orientated programing as a database, classes are tables, objects are rows
+
+Apps:
+blog
+restaurantWebPortfolio = personal_portfolio in tutorial
+Specials = portfolio in tutorial 
+
+Steps:
+	create project - rename project 
+	create apps (blog and specials)
+	add apps to settings.py under installed_apps
+create specials section
+	create class in models.py 
+	class name is Outline = Project in tutorial
+	the Outline servers as a template for each item in specials - 
+		class Outline(models.Model):
+			title = models.CharField(max_length=100)
+			description = models.CharField(max_length=250)
+			image = models.ImageField(upload_to='specials/images/')
+			url = models.URLField(blank=True)
+				(blank=True) is used to make field optional
+	must install pillow to use ImageField, "python -m pip install Pillow".
+after installing pillow you will have unapplied migration(s)/ migrations are changes made to the database 
+	python manage.py migrate
+		then
+	python manage.py makemigrations - to check for any changes
+open /admin, will be taken to log on page
+	create superuser
+		python manage.py createsuperuser
+			user: james
+			password: luke1234 or 7819
+get Outline to show up in admin
+	open admin.py in specials folder 
+		add: from .models import Outline - imports the class Outline to admin.py
+		add: admin.site.register(Outline) - new section will appear in site admin Specials - Outline
+		you can now add objects to this class in very friendly user interface
+NEXT PART IS CONFUSING AND PRESENTED SOMEWHAT OUT OF ORDER IN TUTORIAL
+WRITTEN IN ORDER BELOW, COVERD IN THE LAST HALF OF VIDEO 40
+	images will appear in new folder created in Specials folder - DELETE THIS FOLDER (perhaps skip this step and do the 3 lines, then add images)
+		go to settings.py add lines: MEDIA_URL = '/media/', and MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+		reupload images and media folder with images will be created in project folder
+		go to urls.py  add lines: from django.conf.urls.static import static, and from django.conf import settings
+Creating web pages
+	in urls.py add line: from restaurantWebPortolio(name of folder) import views
+		add path to urlpatterns: path('', views.home, name='home'), 
+	in views in specials create function:
+		def home(request):
+			return render(request, 'specials/home.html')
+		create new folder in specials called Templates then create new folder in Templates called specials and create new file home.html
+		write some html in home.html and load it
+		go back to views.py and add: from .models import Outline
+			add outline = Outline.objects.all() to function home
+				def home(request):
+					 (var)  (class name)
+					outline = Outline.objects.all()
+					return render(request, 'specials/home.html', {'outline': outline})
+	in home.html: <h1>portfolio</h1>
+				{% for outline in outline %}
+				{{ outline }}
+				{% endfor %}
+		change to:
+			<h1>portfolio</h1>
+
+			{% for outline in outline %}
+
+			{{ outline.title }}<br>
+			{{ outline.description }}<br>
+			<img src="{{ outline.image.url }}" height=350 width=500> <br>
+
+			{% endfor %}
+	{% logic must be inside %% inside {} %}
+	adding logic for optional url, use if statement so that if url exists it is displayed, if not the program ignores the url section
+		<img src="{{ outline.image.url }}" height=350 width=500>
+		{% if outline.url %}
+		<br><a href="{{ outline.url }}">
+		{% endif %}
+
+		{% endfor %}	
+**********************************************************************
+code for image as link
+<h1>portfolio</h1>
+
+{% for outline in outline %}
+
+{{ outline.title }}
+<br>
+{{ outline.description }}
+<br>
+{% if outline.url %}
+<br><a href="{{ outline.url }}">
+    {% endif %}
+    <img src="{{ outline.image.url }}" height=350 width=500>
+</a>
+<br>
+{% endfor %}
+**********************************************************************
+
+Adding another URL for different section of website, in this case a blog, for trap site this could be used for results section
+	in project folder urls.py
+		add ", include" to line "from django.urls import path"
+	under urlpatterns add line:
+		path('blog/', include('blog.urls')),
+			this tells django that any url with /blog/ go to blog urls
+create a new file called urls.py in blog folder and add code:
+	from django.urls import path
+	from . import views
+
+	urlpatterns = [
+		path('', views.all_blogs, name='all_blogs'),
+		]
+go to views.py in blog folder add code:
+	from django.shortcuts import render
+
+	def all_blogs(request):
+		return render(request, 'blog/all_blogs.html')
+	
+	in blog folder create templates folder, in templates folder create all_blogs.html
+		add content to all_blogs and render
+modeling blog
+	in blog folder open models.py and add code:
+	class Blog(models.Model):
+		title = models.CharField(max_length=200)
+		description = models.TextField()
+		date = models.DateField()
+	go back to terminal and makemigrations
+	in blog folder open admin.py enter code
+	from django.contrib import admin
+		from .models import Blog
+		admin.site.register(Blog)
+	in blog folder open views.py and update code:
+	from django.shortcuts import render
+	from .models import Blog
+	def all_blogs(request):
+		blogs = Blog.objects.order_by('-date')  -[-5]-to limit to 5 blogs-
+		return render(request, 'blog/all_blogs.html')
+adding static files, images, pdf's
+	create new folder called static in an app folder and create another folder 'portfolio' in that folder
+	add image to portfolio folder
+	in html page add: (must have load static to use static folder)
+		{% load static %} 
+
+		<img src="{% static 'portfolio/pondoLongHorn.jpg' %}">
+making pages of individual blog posts
+	in blog folder urls.py 
+	add line: app_name = 'blog'
+	add to urlpatterns:
+		path('<int:blog_id>/', views.detail, name='detail'),
+	in views.py add function:
+		def detail(request, blog_id):
+			blog = get_object_or_404(Blog, pk=blog_id)
+			return render(request, 'blog/detail.html', {'blog': blog})
+		
+		to: from django.shortcuts import render, 
+		add line: get_object_or_404
+	in blog, in templates, in blog, create new file, detail.html
+			<h1>blog</h1>
+			<hr>
+			{% for blog in blogs %}
+
+			<a href="{% url 'blog:detail' blog.id %}">
+				<h2>{{ blog.title }}</h2>
+			</a>
+
+
+			<p>{{ blog.description }}</p>
+
+			<h5>{{ blog.date }}</h5>
+
+			<hr>
+			{% endfor %}
+	
+
+
+
+		
+		
+	
+			
